@@ -26,4 +26,15 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: in.f9x.NotchClip
         ENABLE_HARDENED_RUNTIME: NO
-    scheme: {}
+    scheme:
+      testTargets: [NotchClipTests]
+  NotchClipTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [NotchClipTests]
+    dependencies:
+      - target: NotchClip
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: in.f9x.NotchClipTests
+        GENERATE_INFOPLIST_FILE: YES

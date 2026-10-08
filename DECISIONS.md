@@ -11,3 +11,14 @@
 - **Content/collapse sequencing** uses delayed animations (`.delay(0.09)` on content-in, `.delay(0.12)` on the collapse spring) instead of timers, so rapid toggling never races.
 - **Esc** is handled by a local keyDown monitor; the panel becomes key (without activating the app) only while expanded.
 - **Wings** (side indicators on the collapsed notch) skipped for now; optional in the spec.
+- **Pasteboard polling** uses a 0.4s `Timer` on the main run loop in `.common` mode. Reading `changeCount` is an integer check, so the main actor is fine and avoids cross-actor hops under Swift 6.
+- **Classification order:** files, images, URLs, rich text, **colors, then plain text**. Colors moved ahead of plain text because apps that copy a color usually add its text form too, which would otherwise always win. A plain-text copy that is exactly one http(s) URL is classified as a URL.
+- **Oversized content is skipped, not truncated** (text > 1MB, image PNG > 10MB). A truncated copy would paste back different content.
+- **Dedupe hash** covers the visible payload only (e.g. plain text for both rich and plain text), so the same text copied from two apps is one item. Dedupe moves the existing item to the top with a fresh timestamp, keeping its pin.
+- **Copy-back** moves the item to the top (`bump`) and records the resulting `changeCount` so the monitor ignores it.
+- **"Clear history" keeps pinned items.** Pins are explicit "keep this" signals.
+- **Corrupt `history.json`** is renamed to `history.corrupt-<ts>.json` instead of being overwritten on the next save.
+- **Dates** are stored as JSON's default `Double` (not ISO 8601), so they round-trip exactly.
+- **Pasteboard access (macOS 15.4+):** `NSPasteboard.accessBehavior` exists in the SDK. When it is `.alwaysDeny`, the monitor stops reading and sets `accessDenied`, which the panel shows as an inline card.
+- **Unit tests run hosted in the app**; `AppDelegate` skips all setup when `XCTestConfigurationFilePath` is set, so tests never read the real clipboard or write real history. Codec tests use `NSPasteboard.withUniqueName()`.
+- **Ignored apps defaults** (bundle IDs): `com.1password.1password`, `com.agilebits.onepassword7`, `com.bitwarden.desktop`, `com.apple.keychainaccess`, `com.apple.Passwords`.
