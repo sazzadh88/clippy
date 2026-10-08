@@ -58,6 +58,7 @@ struct HeaderView: View {
                 }
                 .disabled(store.items.allSatisfy(\.isPinned))
             }
+            HeaderIconButton(systemName: "gearshape", help: "Settings") { model.openSettings() }
         }
         .frame(height: 28)
         .onChange(of: model.focusSearchRequest) { searchFocused = true }

@@ -19,14 +19,18 @@ final class NotchWindowController {
 
     let panel = NotchPanel()
     let model: NotchViewModel
+    private let settings: AppSettings
+    /// Frame of the screen the panel is currently on, to notice when "display with mouse" should move it.
+    private var currentScreenFrame: CGRect?
     private var monitors: [Any] = []
     private var leaveTask: Task<Void, Never>?
     /// The leave-to-collapse timer only arms once the cursor has been inside the expanded panel,
     /// so opening via the hotkey with the mouse elsewhere doesn't instantly collapse.
     private var cursorEnteredSinceExpand = false
 
-    init(store: ClipboardStore, monitor: PasteboardMonitor) {
-        model = NotchViewModel(store: store, monitor: monitor)
+    init(store: ClipboardStore, monitor: PasteboardMonitor, settings: AppSettings) {
+        self.settings = settings
+        model = NotchViewModel(store: store, monitor: monitor, settings: settings)
         let root = NotchRootView(model: model)
             .environment(model)
             .environment(store)
@@ -48,8 +52,18 @@ final class NotchWindowController {
         }
     }
 
+    private var targetScreen: NSScreen? {
+        switch settings.displayChoice {
+        case .builtIn: return NSScreen.notchScreen
+        case .mouse:
+            let cursor = NSEvent.mouseLocation
+            return NSScreen.screens.first { $0.frame.contains(cursor) } ?? NSScreen.main
+        }
+    }
+
     func reposition() {
-        guard let screen = NSScreen.notchScreen else { return }
+        guard let screen = targetScreen else { return }
+        currentScreenFrame = screen.frame
         let geometry = NotchGeometry.of(screen)
         model.geometry = geometry
         let size = CGSize(width: NotchViewModel.expandedSize.width + Self.margin * 2,
@@ -121,6 +135,11 @@ final class NotchWindowController {
 
     private func updateHover() {
         let cursor = NSEvent.mouseLocation
+        // Follow the mouse to another display, but never yank an open panel away.
+        if settings.displayChoice == .mouse, model.state == .collapsed,
+           currentScreenFrame?.contains(cursor) == false {
+            reposition()
+        }
         // Hysteresis: enter via the notch, leave via the larger hovered/expanded shape.
         let inside = visibleRect(for: model.state).insetBy(dx: -1, dy: -1).contains(cursor)
         if panel.ignoresMouseEvents == inside { panel.ignoresMouseEvents = !inside }

@@ -34,7 +34,6 @@ final class NotchViewModel {
     private(set) var state: NotchState = .collapsed
     private(set) var showContent = false
     var pinnedOnly = false
-    var collapseAfterCopy = true
     var searchVisible = false
     var searchText = ""
     /// Mirrors the header's @FocusState so key handling knows whether ⌫ belongs to the field.
@@ -44,13 +43,21 @@ final class NotchViewModel {
     var selectedID: ClipItem.ID?
     private(set) var copiedID: ClipItem.ID?
     @ObservationIgnored var onStateChange: ((NotchState) -> Void)?
+    @ObservationIgnored var onOpenSettings: (() -> Void)?
 
     let store: ClipboardStore
     let monitor: PasteboardMonitor
+    let settings: AppSettings
 
-    init(store: ClipboardStore, monitor: PasteboardMonitor) {
+    init(store: ClipboardStore, monitor: PasteboardMonitor, settings: AppSettings) {
         self.store = store
         self.monitor = monitor
+        self.settings = settings
+    }
+
+    func openSettings() {
+        collapse()
+        onOpenSettings?()
     }
 
     // MARK: - List contents
@@ -72,7 +79,7 @@ final class NotchViewModel {
         Task {
             try? await Task.sleep(for: .seconds(0.9)) // let the "Copied" morph play
             if copiedID == item.id { withAnimation(.easeOut(duration: 0.2)) { copiedID = nil } }
-            if collapseAfterCopy { collapse() }
+            if settings.collapseAfterCopy { collapse() }
         }
     }
 
@@ -182,6 +189,11 @@ struct NotchRootView: View {
                 .fill(.black)
                 .shadow(color: .white.opacity(model.state == .collapsed ? 0 : 0.08), radius: 12)
                 .onTapGesture { model.expand() }
+                .contextMenu {
+                    Button("Settings…") { model.openSettings() }
+                    Divider()
+                    Button("Quit NotchClip") { NSApp.terminate(nil) }
+                }
 
             if model.showContent {
                 VStack(spacing: 6) {

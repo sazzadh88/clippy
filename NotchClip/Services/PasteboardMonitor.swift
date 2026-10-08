@@ -117,25 +117,19 @@ enum PasteboardCodec {
 
 @MainActor @Observable
 final class PasteboardMonitor {
-    static let defaultIgnoredBundleIDs: Set<String> = [
-        "com.1password.1password", "com.agilebits.onepassword7", // 1Password 8 / 7
-        "com.bitwarden.desktop",
-        "com.apple.keychainaccess",
-        "com.apple.Passwords",
-    ]
-
     /// True when the user set clipboard access to "Deny" in System Settings (macOS 15.4+).
     private(set) var accessDenied = false
-    var ignoredBundleIDs = defaultIgnoredBundleIDs
 
     @ObservationIgnored private let pasteboard: NSPasteboard
     @ObservationIgnored private let store: ClipboardStore
+    @ObservationIgnored private let settings: AppSettings
     @ObservationIgnored private var lastChangeCount = 0
     @ObservationIgnored private var selfWriteChangeCount: Int?
     @ObservationIgnored private var timer: Timer?
 
-    init(store: ClipboardStore, pasteboard: NSPasteboard = .general) {
+    init(store: ClipboardStore, settings: AppSettings, pasteboard: NSPasteboard = .general) {
         self.store = store
+        self.settings = settings
         self.pasteboard = pasteboard
     }
 
@@ -170,7 +164,7 @@ final class PasteboardMonitor {
         guard count != selfWriteChangeCount else { return }
 
         let app = NSWorkspace.shared.frontmostApplication
-        if let id = app?.bundleIdentifier, ignoredBundleIDs.contains(id) { return }
+        if let id = app?.bundleIdentifier, settings.ignoredBundleIDs.contains(id) { return }
         guard let clip = PasteboardCodec.read(pasteboard) else { return }
         store.add(clip, sourceBundleID: app?.bundleIdentifier, sourceName: app?.localizedName)
     }

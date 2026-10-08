@@ -19,7 +19,10 @@ struct NotchGeometry: Equatable {
                                      hasNotch: true)
             }
         }
-        return NotchGeometry(notchSize: fallbackSize, centerX: screen.frame.width / 2, hasNotch: false)
+        // No notch: a pill as tall as this screen's menu bar (32pt if the menu bar auto-hides).
+        let menuBar = screen.frame.maxY - screen.visibleFrame.maxY
+        let size = CGSize(width: fallbackSize.width, height: menuBar > 0 ? menuBar : fallbackSize.height)
+        return NotchGeometry(notchSize: size, centerX: screen.frame.width / 2, hasNotch: false)
     }
 }
 

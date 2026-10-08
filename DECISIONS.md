@@ -33,4 +33,11 @@
 - **Hotkey-opened panel:** the 400ms leave-to-collapse only arms after the cursor has been inside the expanded panel; otherwise opening with ⌥⌘V and nudging the mouse would collapse it instantly. Outside clicks and Esc still collapse.
 - **Hotkey** uses KeyboardShortcuts 2.4.0 (`togglePanel`, default ⌥⌘V); the recorder UI is in Settings (M6).
 - **Search resets on collapse.**
+- **Settings** are a plain `NSWindow` + `NSHostingController` (`SettingsWindowController`), not a SwiftUI `Settings` scene, which is unreliable to open from an `LSUIElement` app. Opening it activates the app; the panel collapses first.
+- **`AppSettings`** (UserDefaults-backed `@Observable`) is read directly by the monitor (ignored apps), view model (collapse after copy) and window controller (display). History limit is pushed into `ClipboardStore.limit` from the picker.
+- **"Display with mouse"** moves the panel to the screen under the cursor on the next mouse move, but only while collapsed, so an open panel is never pulled away.
+- **Fallback pill height** = that screen's menu bar thickness (`frame.maxY − visibleFrame.maxY`, 30pt on the test Dell), falling back to 32pt when the menu bar auto-hides. The spec's fixed 32pt overlapped content below a 30pt menu bar.
+- **Launch at login** uses `SMAppService.mainApp`. With an ad-hoc-signed build outside /Applications the system may refuse or require approval; the toggle shows the error or an approval hint and reverts if registration fails.
+- **Right-click on the notch** offers Settings… and Quit (also available when expanded).
+- **Reduce Motion** is checked per animation via `NSWorkspace.accessibilityDisplayShouldReduceMotion` (springs become 0.15s ease, row stagger offset is dropped), so toggling it applies without relaunch.
 - **Ignored apps defaults** (bundle IDs): `com.1password.1password`, `com.agilebits.onepassword7`, `com.bitwarden.desktop`, `com.apple.keychainaccess`, `com.apple.Passwords`.
