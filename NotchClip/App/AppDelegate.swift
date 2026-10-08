@@ -15,7 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         monitor.start()
         self.store = store
         self.monitor = monitor
-        notchController = NotchWindowController()
+        notchController = NotchWindowController(store: store, monitor: monitor)
     }
 
     func applicationWillTerminate(_ notification: Notification) {

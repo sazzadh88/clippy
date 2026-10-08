@@ -17,8 +17,12 @@ final class NotchWindowController {
     private var monitors: [Any] = []
     private var leaveTask: Task<Void, Never>?
 
-    init() {
-        let host = FirstMouseHostingView(rootView: NotchRootView(model: model))
+    init(store: ClipboardStore, monitor: PasteboardMonitor) {
+        let root = NotchRootView(model: model)
+            .environment(model)
+            .environment(store)
+            .environment(monitor)
+        let host = FirstMouseHostingView(rootView: root)
         host.sizingOptions = []
         panel.contentView = host
         model.onStateChange = { [weak self] in self?.stateChanged($0) }

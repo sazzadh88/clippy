@@ -21,4 +21,10 @@
 - **Dates** are stored as JSON's default `Double` (not ISO 8601), so they round-trip exactly.
 - **Pasteboard access (macOS 15.4+):** `NSPasteboard.accessBehavior` exists in the SDK. When it is `.alwaysDeny`, the monitor stops reading and sets `accessDenied`, which the panel shows as an inline card.
 - **Unit tests run hosted in the app**; `AppDelegate` skips all setup when `XCTestConfigurationFilePath` is set, so tests never read the real clipboard or write real history. Codec tests use `NSPasteboard.withUniqueName()`.
+- **Row stagger** uses one `revealed` flag on the list, flipped on appear; each row animates with `0.09s + index × 25ms` delay (capped at 10 rows). Rows created later by `LazyVStack` while scrolling see `revealed == true` and don't re-animate.
+- **Thumbnails** are downsampled with ImageIO (`CGImageSourceCreateThumbnailAtIndex`, max 240px) and cached with app/file icons in `NSCache` (`IconCache`), so a 5K screenshot is never fully decoded for a 44pt row.
+- **Relative timestamps** come from a single `TimelineView` (30s period) around the list rather than per-row timers.
+- **"Code-looking" text** (SF Mono) is a marker heuristic: `{ } ; => -> () </`, a tab, or 4-space indentation.
+- **Collapse after copy** defaults to on; it fires after the 0.9s "Copied" morph. Settings toggle lands in M6.
+- **Access-denied card** opens the Privacy & Security pane (`x-apple.systempreferences:com.apple.preference.security?Privacy`); there is no documented deep link to the "Paste from Other Apps" list itself.
 - **Ignored apps defaults** (bundle IDs): `com.1password.1password`, `com.agilebits.onepassword7`, `com.bitwarden.desktop`, `com.apple.keychainaccess`, `com.apple.Passwords`.

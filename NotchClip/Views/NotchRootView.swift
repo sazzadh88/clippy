@@ -33,6 +33,8 @@ final class NotchViewModel {
     var geometry = NotchGeometry(notchSize: NotchGeometry.fallbackSize, centerX: 0, hasNotch: false)
     private(set) var state: NotchState = .collapsed
     private(set) var showContent = false
+    var pinnedOnly = false
+    var collapseAfterCopy = true
     @ObservationIgnored var onStateChange: ((NotchState) -> Void)?
 
     var metrics: NotchMetrics { metrics(for: state) }
@@ -92,13 +94,16 @@ struct NotchRootView: View {
                 .onTapGesture { model.expand() }
 
             if model.showContent {
-                PanelContentView()
-                    .frame(width: NotchViewModel.expandedSize.width - 32,
-                           height: NotchViewModel.expandedSize.height - notchHeight - 12)
-                    .padding(.top, notchHeight)
-                    .transition(.opacity
-                        .combined(with: .scale(scale: 0.96, anchor: .top))
-                        .combined(with: .modifier(active: BlurModifier(radius: 6), identity: BlurModifier(radius: 0))))
+                VStack(spacing: 6) {
+                    HeaderView()
+                    ClipboardListView()
+                }
+                .frame(width: NotchViewModel.expandedSize.width - 32,
+                       height: NotchViewModel.expandedSize.height - notchHeight - 12)
+                .padding(.top, notchHeight)
+                .transition(.opacity
+                    .combined(with: .scale(scale: 0.96, anchor: .top))
+                    .combined(with: .modifier(active: BlurModifier(radius: 6), identity: BlurModifier(radius: 0))))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -109,16 +114,4 @@ struct NotchRootView: View {
 struct BlurModifier: ViewModifier {
     let radius: CGFloat
     func body(content: Content) -> some View { content.blur(radius: radius) }
-}
-
-/// Placeholder until the clipboard list lands (M4).
-struct PanelContentView: View {
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "clipboard").font(.system(size: 28))
-            Text("Copy something to see it here").font(.system(size: 12))
-        }
-        .foregroundStyle(.white.opacity(0.45))
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
 }
