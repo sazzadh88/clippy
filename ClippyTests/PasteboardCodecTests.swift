@@ -1,6 +1,6 @@
 import AppKit
 import Testing
-@testable import NotchClip
+@testable import Clippy
 
 @MainActor
 struct PasteboardCodecTests {

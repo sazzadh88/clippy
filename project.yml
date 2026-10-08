@@ -1,4 +1,4 @@
-name: NotchClip
+name: Clippy
 options:
   bundleIdPrefix: in.f9x
   deploymentTarget:
@@ -14,33 +14,33 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     CODE_SIGN_STYLE: Manual
 targets:
-  NotchClip:
+  Clippy:
     type: application
     platform: macOS
-    sources: [NotchClip]
+    sources: [Clippy]
     dependencies:
       - package: KeyboardShortcuts
     info:
-      path: NotchClip/Info.plist
+      path: Clippy/Info.plist
       properties:
         LSUIElement: true
-        CFBundleDisplayName: NotchClip
+        CFBundleDisplayName: Clippy
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
         NSHumanReadableCopyright: ""
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: in.f9x.NotchClip
+        PRODUCT_BUNDLE_IDENTIFIER: in.f9x.Clippy
         ENABLE_HARDENED_RUNTIME: NO
     scheme:
-      testTargets: [NotchClipTests]
-  NotchClipTests:
+      testTargets: [ClippyTests]
+  ClippyTests:
     type: bundle.unit-test
     platform: macOS
-    sources: [NotchClipTests]
+    sources: [ClippyTests]
     dependencies:
-      - target: NotchClip
+      - target: Clippy
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: in.f9x.NotchClipTests
+        PRODUCT_BUNDLE_IDENTIFIER: in.f9x.ClippyTests
         GENERATE_INFOPLIST_FILE: YES

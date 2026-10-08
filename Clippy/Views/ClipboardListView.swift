@@ -116,7 +116,7 @@ private struct AccessDeniedCard: View {
                 Text("Clipboard access is turned off")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.9))
-                Text("Open System Settings › Privacy & Security › Paste from Other Apps and set NotchClip to Allow.")
+                Text("Open System Settings › Privacy & Security › Paste from Other Apps and set Clippy to Allow.")
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.55))
                     .fixedSize(horizontal: false, vertical: true)

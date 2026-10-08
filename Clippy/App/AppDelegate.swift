@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Unit tests run hosted in the app; don't touch the real clipboard or history.
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
 
+        migrateFromNotchClip()
         let settings = AppSettings()
         let store = ClipboardStore(limit: settings.historyLimit)
         let monitor = PasteboardMonitor(store: store, settings: settings)
@@ -26,5 +27,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         store?.saveNow()
+    }
+
+    /// The app used to be called NotchClip (bundle ID `in.f9x.NotchClip`). Carry over its history
+    /// folder and preferences once, without overwriting anything Clippy already has.
+    /// ponytail: one-time migration; delete once nobody runs a NotchClip build.
+    private func migrateFromNotchClip() {
+        let fm = FileManager.default
+        let oldDirectory = URL.applicationSupportDirectory.appending(path: "NotchClip", directoryHint: .isDirectory)
+        if fm.fileExists(atPath: oldDirectory.path), !fm.fileExists(atPath: ClipboardStore.defaultDirectory.path) {
+            try? fm.moveItem(at: oldDirectory, to: ClipboardStore.defaultDirectory)
+        }
+
+        let defaults = UserDefaults.standard
+        if let bundleID = Bundle.main.bundleIdentifier,
+           defaults.persistentDomain(forName: bundleID) == nil,
+           let old = defaults.persistentDomain(forName: "in.f9x.NotchClip") {
+            defaults.setPersistentDomain(old, forName: bundleID)
+        }
     }
 }

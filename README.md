@@ -1,10 +1,10 @@
-# NotchClip
+# Clippy
 
 A clipboard history in your menu bar. Click the clipboard icon (or press ⌥⌘V) to see your recent clips; click one to put it back on the clipboard. Works on every display.
 
 No Dock icon. Right-click the menu bar icon for Settings and Quit.
 
-> The name is from the first version, which lived in the MacBook notch. See [DECISIONS.md](DECISIONS.md) for why it moved to the menu bar.
+> The first version was called NotchClip and lived in the MacBook notch. See [DECISIONS.md](DECISIONS.md) for why it moved to the menu bar.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ This generates the Xcode project, builds it, quits any running copy and opens th
 Run the tests:
 
 ```sh
-xcodebuild test -scheme NotchClip -destination 'platform=macOS' -derivedDataPath build
+xcodebuild test -scheme Clippy -destination 'platform=macOS' -derivedDataPath build
 ```
 
 ## Using it
@@ -46,12 +46,12 @@ On MacBooks with a notch, a crowded menu bar can hide icons behind the notch. If
 
 - Items that password managers mark as concealed, transient or auto-generated ([nspasteboard.org](http://nspasteboard.org) types) are never recorded.
 - Copies made in ignored apps are never recorded. Defaults: 1Password, Bitwarden, Keychain Access, Passwords. Edit the list in Settings.
-- History stays on your Mac in `~/Library/Application Support/NotchClip/` (`history.json` plus an `images/` folder). Nothing is sent anywhere.
-- On macOS 15.4+, if you set NotchClip to **Deny** under System Settings › Privacy & Security › Paste from Other Apps, it stops reading the clipboard and shows a card in the panel explaining how to allow it.
+- History stays on your Mac in `~/Library/Application Support/Clippy/` (`history.json` plus an `images/` folder). Nothing is sent anywhere.
+- On macOS 15.4+, if you set Clippy to **Deny** under System Settings › Privacy & Security › Paste from Other Apps, it stops reading the clipboard and shows a card in the panel explaining how to allow it.
 
 ## Not sandboxed
 
-NotchClip v1 is **not sandboxed** and is ad-hoc signed. That keeps clipboard monitoring and launch-at-login simple, but it also means:
+Clippy v1 is **not sandboxed** and is ad-hoc signed. That keeps clipboard monitoring and launch-at-login simple, but it also means:
 
 - Launch at login (`SMAppService`) may be refused or need approval in System Settings › General › Login Items, especially when running from the build folder. Copy the app to `/Applications` first.
 - Gatekeeper may warn the first time you open a copy of the app on another Mac.
@@ -59,13 +59,13 @@ NotchClip v1 is **not sandboxed** and is ad-hoc signed. That keeps clipboard mon
 ## Project layout
 
 ```
-NotchClip/
+Clippy/
   App/        App entry point and AppDelegate (wires everything together)
   Window/     Menu bar icon, dropdown panel, positioning, keyboard and outside-click handling
   Views/      Panel model and view, header, list, rows, settings
   Model/      ClipItem, ClipboardStore (persistence, dedupe, limits), AppSettings
   Services/   PasteboardMonitor + PasteboardCodec (read/classify/write), LaunchAtLogin
-NotchClipTests/  Store and classification tests (Swift Testing)
+ClippyTests/  Store and classification tests (Swift Testing)
 ```
 
 Design decisions and deviations from the original spec are in [DECISIONS.md](DECISIONS.md).

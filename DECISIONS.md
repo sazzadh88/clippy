@@ -2,7 +2,11 @@
 
 ## Menu bar instead of the notch (2026-10-08)
 
-The original spec put the UI in the MacBook notch. In use, the panel only appeared on the built-in display, so it was missing when working on an external monitor. The notch UI was **replaced** by a menu bar icon (`NSStatusItem`) that opens the same list in a dropdown. The menu bar exists on every display, so this works everywhere. Removed: the notch shape and hover/expand animations, notch detection, click-through mouse tracking, and the "Show on" display setting. The product name stays NotchClip.
+The original spec put the UI in the MacBook notch. In use, the panel only appeared on the built-in display, so it was missing when working on an external monitor. The notch UI was **replaced** by a menu bar icon (`NSStatusItem`) that opens the same list in a dropdown. The menu bar exists on every display, so this works everywhere. Removed: the notch shape and hover/expand animations, notch detection, click-through mouse tracking, and the "Show on" display setting.
+
+## Renamed NotchClip → Clippy (2026-10-08)
+
+With the notch gone, the app is now **Clippy** (bundle ID `in.f9x.Clippy`, folders `Clippy/` and `ClippyTests/`). On first launch, `AppDelegate.migrateFromNotchClip()` moves `~/Library/Application Support/NotchClip` to `…/Clippy` and copies the `in.f9x.NotchClip` preferences (history limit, hotkey, ignored apps) into the new domain. It never overwrites existing Clippy data. The old preferences file is left in place.
 
 - **Dropdown is a non-activating `NSPanel`, not an `NSPopover`.** A popover has to activate the app to get keyboard input, which takes focus from the app you're copying into. The panel becomes key without activating, so ↑/↓/Return/Esc work and typing goes back to your app when it closes.
 - **Left-click toggles the list; right-click shows Settings… / Quit.** The menu is attached only for the right-click (`statusItem.menu` set, `performClick`, cleared) so left-click stays free.

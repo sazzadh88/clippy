@@ -33,7 +33,7 @@ final class MenuBarController: NSObject {
         panel.setContentSize(PanelModel.size)
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "clipboard", accessibilityDescription: "NotchClip")
+            button.image = NSImage(systemSymbolName: "clipboard", accessibilityDescription: "Clippy")
             button.target = self
             button.action = #selector(statusItemClicked)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -59,7 +59,7 @@ final class MenuBarController: NSObject {
         let menu = NSMenu()
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target = self
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit NotchClip", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(withTitle: "Quit Clippy", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         // Attaching the menu only for this click keeps left-click free to toggle the panel.
         statusItem.menu = menu
         statusItem.button?.performClick(nil)

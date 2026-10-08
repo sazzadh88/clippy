@@ -18,7 +18,7 @@ final class SettingsWindowController {
         if window == nil {
             let host = NSHostingController(rootView: SettingsView(settings: settings, store: store))
             let window = NSWindow(contentViewController: host)
-            window.title = "NotchClip Settings"
+            window.title = "Clippy Settings"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()
@@ -89,7 +89,7 @@ struct SettingsView: View {
             Section {
                 HStack {
                     Spacer()
-                    Button("Quit NotchClip") { NSApp.terminate(nil) }
+                    Button("Quit Clippy") { NSApp.terminate(nil) }
                 }
             }
         }
@@ -115,7 +115,7 @@ struct SettingsView: View {
         do {
             try LaunchAtLogin.set(on)
             launchError = LaunchAtLogin.needsApproval
-                ? "Approve NotchClip in System Settings › General › Login Items." : nil
+                ? "Approve Clippy in System Settings › General › Login Items." : nil
         } catch {
             launchError = error.localizedDescription
             launchAtLogin = LaunchAtLogin.isEnabled

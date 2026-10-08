@@ -5,7 +5,7 @@ import Observation
 final class ClipboardStore {
     static let limitOptions = [50, 100, 200, 500]
     nonisolated static var defaultDirectory: URL {
-        URL.applicationSupportDirectory.appending(path: "NotchClip", directoryHint: .isDirectory)
+        URL.applicationSupportDirectory.appending(path: "Clippy", directoryHint: .isDirectory)
     }
 
     /// Newest first. Pinned items stay in this list; views split them into a section.
@@ -120,7 +120,7 @@ final class ClipboardStore {
         do {
             try JSONEncoder().encode(items).write(to: historyURL, options: .atomic)
         } catch {
-            NSLog("NotchClip: failed to save history: \(error)")
+            NSLog("Clippy: failed to save history: \(error)")
         }
     }
 
@@ -133,7 +133,7 @@ final class ClipboardStore {
             // Keep the unreadable file instead of overwriting it on the next save.
             let backup = directory.appending(path: "history.corrupt-\(Int(Date().timeIntervalSince1970)).json")
             try? FileManager.default.moveItem(at: historyURL, to: backup)
-            NSLog("NotchClip: history unreadable, moved to \(backup.lastPathComponent): \(error)")
+            NSLog("Clippy: history unreadable, moved to \(backup.lastPathComponent): \(error)")
         }
     }
 

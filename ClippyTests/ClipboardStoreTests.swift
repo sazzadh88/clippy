@@ -1,10 +1,10 @@
 import Foundation
 import Testing
-@testable import NotchClip
+@testable import Clippy
 
 @MainActor
 struct ClipboardStoreTests {
-    let dir = FileManager.default.temporaryDirectory.appending(path: "NotchClipTests-\(UUID().uuidString)")
+    let dir = FileManager.default.temporaryDirectory.appending(path: "ClippyTests-\(UUID().uuidString)")
 
     private func text(_ s: String) -> CapturedClip { CapturedClip(kind: .text, plainText: s) }
     private let png = Data([0x89, 0x50, 0x4E, 0x47, 1, 2, 3])
