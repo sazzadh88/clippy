@@ -6,12 +6,13 @@ struct ClipboardRowView: View {
     let item: ClipItem
     let now: Date
     let imageURL: URL?
+    let isSelected: Bool
+    let isCopied: Bool
     let onCopy: (_ plainTextOnly: Bool) -> Void
     let onTogglePin: () -> Void
     let onDelete: () -> Void
 
     @State private var hovering = false
-    @State private var copied = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -25,15 +26,15 @@ struct ClipboardRowView: View {
         .frame(minHeight: 44)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.white.opacity(hovering ? 0.12 : 0.08))
-                .strokeBorder(.white.opacity(0.06), lineWidth: 0.5)
+                .fill(.white.opacity(hovering || isSelected ? 0.12 : 0.08))
+                .strokeBorder(.white.opacity(isSelected ? 0.22 : 0.06), lineWidth: isSelected ? 1 : 0.5)
         )
         .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .onHover { h in withAnimation(.easeOut(duration: 0.12)) { hovering = h } }
-        .onTapGesture { copy(plainTextOnly: false) }
+        .onTapGesture { onCopy(false) }
         .contextMenu {
-            Button("Copy") { copy(plainTextOnly: false) }
-            Button("Copy as Plain Text") { copy(plainTextOnly: true) }
+            Button("Copy") { onCopy(false) }
+            Button("Copy as Plain Text") { onCopy(true) }
                 .disabled(item.kind == .image)
             Button(item.isPinned ? "Unpin" : "Pin", action: onTogglePin)
             Divider()
@@ -43,7 +44,7 @@ struct ClipboardRowView: View {
 
     @ViewBuilder private var trailing: some View {
         ZStack(alignment: .trailing) {
-            if copied {
+            if isCopied {
                 Label("Copied", systemImage: "checkmark")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.green)
@@ -68,15 +69,6 @@ struct ClipboardRowView: View {
             }
         }
         .frame(minWidth: 52, alignment: .trailing)
-    }
-
-    private func copy(plainTextOnly: Bool) {
-        onCopy(plainTextOnly)
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { copied = true }
-        Task {
-            try? await Task.sleep(for: .seconds(0.9))
-            withAnimation(.easeOut(duration: 0.2)) { copied = false }
-        }
     }
 }
 

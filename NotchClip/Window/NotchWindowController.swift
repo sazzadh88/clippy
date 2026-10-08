@@ -1,5 +1,10 @@
 import AppKit
+import KeyboardShortcuts
 import SwiftUI
+
+extension KeyboardShortcuts.Name {
+    static let togglePanel = Self("togglePanel", default: .init(.v, modifiers: [.command, .option]))
+}
 
 /// Hosting view that takes the first click even though the panel is never active.
 final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
@@ -13,11 +18,15 @@ final class NotchWindowController {
     static let leaveDelay: Duration = .milliseconds(400)
 
     let panel = NotchPanel()
-    let model = NotchViewModel()
+    let model: NotchViewModel
     private var monitors: [Any] = []
     private var leaveTask: Task<Void, Never>?
+    /// The leave-to-collapse timer only arms once the cursor has been inside the expanded panel,
+    /// so opening via the hotkey with the mouse elsewhere doesn't instantly collapse.
+    private var cursorEnteredSinceExpand = false
 
     init(store: ClipboardStore, monitor: PasteboardMonitor) {
+        model = NotchViewModel(store: store, monitor: monitor)
         let root = NotchRootView(model: model)
             .environment(model)
             .environment(store)
@@ -29,6 +38,7 @@ final class NotchWindowController {
         reposition()
         panel.orderFrontRegardless()
         installMonitors()
+        KeyboardShortcuts.onKeyUp(for: .togglePanel) { [weak self] in self?.toggle() }
 
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -72,15 +82,33 @@ final class NotchWindowController {
             MainActor.assumeIsolated { self?.model.collapse() }
         }) { monitors.append(m) }
 
+        // Keys reach the panel only while it's key (expanded). Handled here, before the search field sees them.
         if let m = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { [weak self] event in
-            guard event.keyCode == 53 else { return event }
-            let handled = MainActor.assumeIsolated { () -> Bool in
-                guard let self, self.model.state == .expanded else { return false }
-                self.model.collapse()
-                return true
+            let keyCode = event.keyCode
+            let command = event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
+            let digit = event.charactersIgnoringModifiers.flatMap(Int.init)
+            let handled = MainActor.assumeIsolated {
+                self?.handleKey(keyCode, command: command, digit: digit) ?? false
             }
             return handled ? nil : event
         }) { monitors.append(m) }
+    }
+
+    /// Returns true if the key was consumed.
+    private func handleKey(_ keyCode: UInt16, command: Bool, digit: Int?) -> Bool {
+        guard model.state == .expanded else { return false }
+        switch keyCode {
+        case 53: model.collapse() // Esc
+        case 125: model.moveSelection(by: 1) // ↓
+        case 126: model.moveSelection(by: -1) // ↑
+        case 36, 76: model.copySelected() // Return, keypad Enter
+        case 51 where !model.searchFocused: model.deleteSelected() // ⌫ (in the field it edits text)
+        case 3 where command: model.showSearch() // ⌘F
+        default:
+            guard command, let digit, (1...9).contains(digit) else { return false }
+            model.quickCopy(digit) // ⌘1…⌘9
+        }
+        return true
     }
 
     /// Visible shape in screen coordinates for a given state.
@@ -104,9 +132,10 @@ final class NotchWindowController {
             if !inside { model.unhover() }
         case .expanded:
             if inside {
+                cursorEnteredSinceExpand = true
                 leaveTask?.cancel()
                 leaveTask = nil
-            } else if leaveTask == nil {
+            } else if leaveTask == nil, cursorEnteredSinceExpand {
                 leaveTask = Task { [weak self] in
                     try? await Task.sleep(for: Self.leaveDelay)
                     guard !Task.isCancelled else { return }
@@ -119,6 +148,7 @@ final class NotchWindowController {
     private func stateChanged(_ state: NotchState) {
         leaveTask?.cancel()
         leaveTask = nil
+        cursorEnteredSinceExpand = false
         switch state {
         case .expanded:
             panel.allowsKey = true

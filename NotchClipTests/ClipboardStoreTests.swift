@@ -71,6 +71,16 @@ struct ClipboardStoreTests {
         #expect(try Data(contentsOf: imageURL) == png)
     }
 
+    @Test func searchMatchesTextFileNamesAndSourceApp() {
+        let text = ClipItem(kind: .text, plainText: "Hello World", sourceAppName: "Notes", contentHash: "")
+        let file = ClipItem(kind: .file, fileURLs: [URL(filePath: "/tmp/Report.PDF")], contentHash: "")
+        #expect(text.matches("hello"))
+        #expect(text.matches("NOTES"))
+        #expect(!text.matches("report"))
+        #expect(file.matches("report.pdf"))
+        #expect(!file.matches("tmp")) // only the file name, not the full path
+    }
+
     @Test func corruptHistoryIsBackedUpNotOverwritten() throws {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try Data("not json".utf8).write(to: dir.appending(path: "history.json"))

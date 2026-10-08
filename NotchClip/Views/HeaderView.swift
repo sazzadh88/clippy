@@ -5,6 +5,7 @@ struct HeaderView: View {
     @Environment(NotchViewModel.self) private var model
     @State private var confirmingClear = false
     @State private var confirmTask: Task<Void, Never>?
+    @FocusState private var searchFocused: Bool
 
     var body: some View {
         @Bindable var model = model
@@ -12,13 +13,29 @@ struct HeaderView: View {
             Image(systemName: "clipboard")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.white.opacity(0.55))
-            Text("Clipboard")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.9))
-            Text("\(store.items.count)")
-                .font(.system(size: 11, weight: .medium).monospacedDigit())
-                .foregroundStyle(.white.opacity(0.45))
-                .padding(.trailing, 4)
+            if model.searchVisible {
+                TextField("Search", text: $model.searchText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .focused($searchFocused)
+                    .onAppear { searchFocused = true }
+                    .padding(.horizontal, 8)
+                    .frame(width: 200, height: 22)
+                    .background(Capsule().fill(.white.opacity(0.1)))
+                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .leading)))
+            } else {
+                Text("Clipboard")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+                Text("\(store.items.count)")
+                    .font(.system(size: 11, weight: .medium).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.45))
+                    .padding(.trailing, 4)
+            }
+            HeaderIconButton(systemName: model.searchVisible ? "xmark.circle.fill" : "magnifyingglass",
+                             isActive: model.searchVisible, help: "Search (⌘F)") {
+                model.searchVisible ? model.hideSearch() : model.showSearch()
+            }
             HeaderIconButton(systemName: model.pinnedOnly ? "pin.fill" : "pin", isActive: model.pinnedOnly,
                              help: "Show pinned only") {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { model.pinnedOnly.toggle() }
@@ -43,6 +60,9 @@ struct HeaderView: View {
             }
         }
         .frame(height: 28)
+        .onChange(of: model.focusSearchRequest) { searchFocused = true }
+        .onChange(of: searchFocused) { _, focused in model.searchFocused = focused }
+        .onChange(of: model.searchText) { model.selectedID = model.visibleItems.first?.id }
     }
 
     private func clear() {

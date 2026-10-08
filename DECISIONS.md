@@ -27,4 +27,10 @@
 - **"Code-looking" text** (SF Mono) is a marker heuristic: `{ } ; => -> () </`, a tab, or 4-space indentation.
 - **Collapse after copy** defaults to on; it fires after the 0.9s "Copied" morph. Settings toggle lands in M6.
 - **Access-denied card** opens the Privacy & Security pane (`x-apple.systempreferences:com.apple.preference.security?Privacy`); there is no documented deep link to the "Paste from Other Apps" list itself.
+- **Keyboard handling** lives in the panel's local `keyDown` monitor, which runs before the search field's field editor. ↑/↓/Return/⌘F/⌘1–9/Esc are always handled; ⌫ deletes the selected item only when the search field is *not* focused, so it can still edit the query.
+- **Selection** starts on the first visible item when the panel expands and resets to the first match whenever the query changes, so Return always copies something sensible.
+- **Actions live on `NotchViewModel`** (copy, delete, pin, selection), shared by mouse and keyboard; the "Copied" morph is driven by `copiedID` so keyboard copies show it too.
+- **Hotkey-opened panel:** the 400ms leave-to-collapse only arms after the cursor has been inside the expanded panel; otherwise opening with ⌥⌘V and nudging the mouse would collapse it instantly. Outside clicks and Esc still collapse.
+- **Hotkey** uses KeyboardShortcuts 2.4.0 (`togglePanel`, default ⌥⌘V); the recorder UI is in Settings (M6).
+- **Search resets on collapse.**
 - **Ignored apps defaults** (bundle IDs): `com.1password.1password`, `com.agilebits.onepassword7`, `com.bitwarden.desktop`, `com.apple.keychainaccess`, `com.apple.Passwords`.

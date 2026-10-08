@@ -9,54 +9,57 @@ struct ClipboardListView: View {
     @State private var revealed = false
 
     var body: some View {
-        let visible = model.pinnedOnly ? store.items.filter(\.isPinned) : store.items
-        let pinned = visible.filter(\.isPinned)
-        let recent = visible.filter { !$0.isPinned }
+        let (pinned, recent) = model.sections
 
         VStack(spacing: 8) {
             if monitor.accessDenied { AccessDeniedCard() }
 
-            if visible.isEmpty {
-                EmptyStateView(pinnedOnly: model.pinnedOnly)
+            if pinned.isEmpty && recent.isEmpty {
+                EmptyStateView(message: emptyMessage)
             } else {
-                ScrollView {
-                    TimelineView(.periodic(from: .now, by: 30)) { timeline in
-                        LazyVStack(spacing: 8) {
-                            if !pinned.isEmpty {
-                                SectionLabel(title: "Pinned")
-                                rows(pinned, startIndex: 0, now: timeline.date)
-                                if !recent.isEmpty { SectionLabel(title: "Recent") }
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        TimelineView(.periodic(from: .now, by: 30)) { timeline in
+                            LazyVStack(spacing: 8) {
+                                if !pinned.isEmpty {
+                                    SectionLabel(title: "Pinned")
+                                    rows(pinned, startIndex: 0, now: timeline.date)
+                                    if !recent.isEmpty { SectionLabel(title: "Recent") }
+                                }
+                                rows(recent, startIndex: pinned.count, now: timeline.date)
                             }
-                            rows(recent, startIndex: pinned.count, now: timeline.date)
+                            .padding(.bottom, 8)
                         }
-                        .padding(.bottom, 8)
+                    }
+                    .scrollIndicators(.never)
+                    .onChange(of: model.selectedID) { _, id in
+                        guard let id else { return }
+                        withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(id) }
                     }
                 }
-                .scrollIndicators(.never)
             }
         }
         .onAppear { revealed = true }
     }
 
+    private var emptyMessage: (symbol: String, text: String) {
+        if !model.searchText.isEmpty { return ("magnifyingglass", "No matches") }
+        if model.pinnedOnly { return ("pin.slash", "No pinned items") }
+        return ("clipboard", "Copy something to see it here")
+    }
+
     private func rows(_ items: [ClipItem], startIndex: Int, now: Date) -> some View {
         ForEach(Array(items.enumerated()), id: \.element.id) { offset, item in
             ClipboardRowView(item: item, now: now, imageURL: store.imageURL(for: item),
-                             onCopy: { copy(item, plainTextOnly: $0) },
-                             onTogglePin: { withAnimation(.rowSpring) { store.togglePin(id: item.id) } },
-                             onDelete: { withAnimation(.rowSpring) { store.remove(id: item.id) } })
+                             isSelected: model.selectedID == item.id,
+                             isCopied: model.copiedID == item.id,
+                             onCopy: { model.copy(item, plainTextOnly: $0) },
+                             onTogglePin: { model.togglePin(item) },
+                             onDelete: { model.delete(item) })
+                .id(item.id)
                 .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .top)),
                                         removal: .opacity.combined(with: .offset(x: -24))))
                 .stagger(revealed: revealed, index: startIndex + offset)
-        }
-    }
-
-    private func copy(_ item: ClipItem, plainTextOnly: Bool) {
-        withAnimation(.rowSpring) { monitor.copy(item, plainTextOnly: plainTextOnly) }
-        if model.collapseAfterCopy {
-            Task {
-                try? await Task.sleep(for: .seconds(0.9)) // let the "Copied" morph play
-                model.collapse()
-            }
         }
     }
 }
@@ -90,12 +93,12 @@ private struct SectionLabel: View {
 }
 
 private struct EmptyStateView: View {
-    let pinnedOnly: Bool
+    let message: (symbol: String, text: String)
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: pinnedOnly ? "pin.slash" : "clipboard")
+            Image(systemName: message.symbol)
                 .font(.system(size: 26, weight: .light))
-            Text(pinnedOnly ? "No pinned items" : "Copy something to see it here")
+            Text(message.text)
                 .font(.system(size: 12))
         }
         .foregroundStyle(.white.opacity(0.35))

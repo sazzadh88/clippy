@@ -20,6 +20,14 @@ struct ClipItem: Codable, Identifiable, Equatable, Sendable {
     var contentHash: String
 }
 
+extension ClipItem {
+    /// Case-insensitive search over text/URL/color, file names and source app name.
+    func matches(_ query: String) -> Bool {
+        let fields = [plainText, sourceAppName] + (fileURLs ?? []).map(\.lastPathComponent)
+        return fields.contains { $0?.localizedCaseInsensitiveContains(query) == true }
+    }
+}
+
 /// Content read from a pasteboard, before it becomes a stored `ClipItem`.
 struct CapturedClip: Sendable {
     var kind: ClipKind
