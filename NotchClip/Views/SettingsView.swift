@@ -45,9 +45,6 @@ struct SettingsView: View {
                 if let launchError {
                     Text(launchError).font(.caption).foregroundStyle(.red)
                 }
-                Picker("Show on", selection: $settings.displayChoice) {
-                    ForEach(AppSettings.DisplayChoice.allCases) { Text($0.title).tag($0) }
-                }
                 KeyboardShortcuts.Recorder("Toggle panel", name: .togglePanel)
             }
 
@@ -56,7 +53,7 @@ struct SettingsView: View {
                     ForEach(ClipboardStore.limitOptions, id: \.self) { Text("\($0) items").tag($0) }
                 }
                 .onChange(of: settings.historyLimit) { _, limit in store.limit = limit }
-                Toggle("Collapse after copying an item", isOn: $settings.collapseAfterCopy)
+                Toggle("Close the list after copying an item", isOn: $settings.closeAfterCopy)
                 LabeledContent("Pinned items never count toward the limit.") {
                     Button("Clear History…", role: .destructive) { confirmClear = true }
                 }

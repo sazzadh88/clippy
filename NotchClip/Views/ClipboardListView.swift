@@ -4,7 +4,7 @@ import SwiftUI
 struct ClipboardListView: View {
     @Environment(ClipboardStore.self) private var store
     @Environment(PasteboardMonitor.self) private var monitor
-    @Environment(NotchViewModel.self) private var model
+    @Environment(PanelModel.self) private var model
     /// Flips once on appear; each row animates in with its own small delay (stagger).
     @State private var revealed = false
 

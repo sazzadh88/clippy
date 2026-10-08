@@ -1,43 +1,53 @@
 # Decisions
 
+## Menu bar instead of the notch (2026-10-08)
+
+The original spec put the UI in the MacBook notch. In use, the panel only appeared on the built-in display, so it was missing when working on an external monitor. The notch UI was **replaced** by a menu bar icon (`NSStatusItem`) that opens the same list in a dropdown. The menu bar exists on every display, so this works everywhere. Removed: the notch shape and hover/expand animations, notch detection, click-through mouse tracking, and the "Show on" display setting. The product name stays NotchClip.
+
+- **Dropdown is a non-activating `NSPanel`, not an `NSPopover`.** A popover has to activate the app to get keyboard input, which takes focus from the app you're copying into. The panel becomes key without activating, so ↑/↓/Return/Esc work and typing goes back to your app when it closes.
+- **Left-click toggles the list; right-click shows Settings… / Quit.** The menu is attached only for the right-click (`statusItem.menu` set, `performClick`, cleared) so left-click stays free.
+- **Clicks on the icon arrive at the global mouse monitor.** On macOS 27 the menu bar is drawn by another process, so a click on our own icon looks like an outside click. The outside-click monitor ignores clicks inside the icon's frame and lets the icon's action toggle; otherwise clicking the icon while open closed and immediately reopened the panel.
+- **Placement:** on the display with the mouse. Under the icon if the icon is on that display; otherwise top-right of the display. That covers the hotkey and the case where the icon is hidden (on notch Macs, crowded menu bars push icons behind the notch).
+- **"Copied" check shows for 0.6s** (was 0.9s) before the list closes; a dropdown that lingers feels slow.
+
+## General
+
 - **Not sandboxed (v1).** No entitlements file, so pasteboard reading and launch-at-login need no extra setup.
 - **Ad-hoc signing** (`CODE_SIGN_IDENTITY = "-"`) so it builds from the CLI with no developer account.
-- **Generated `.xcodeproj` is git-ignored.** `project.yml` is the source of truth; run `xcodegen` after cloning.
-- **Notch width** = `screen.frame.width - auxiliaryTopLeftArea.width - auxiliaryTopRightArea.width`, notch x = left area width. Uses only widths, so it doesn't depend on which coordinate space the auxiliary rects are reported in. Height = `safeAreaInsets.top`.
-- **Click-through: option (a), toggle `ignoresMouseEvents`.** The window is always the max size; `ignoresMouseEvents` is true unless the cursor is inside the current visible shape. Driven purely by global + local `mouseMoved`/`leftMouseDragged` monitors — no 60Hz timer, since the global monitor already fires for every move outside our window and that's the only place a state change can come from.
-- **Global mouse monitor needs no Accessibility permission** — verified on macOS 27: hover tracking worked with no prompt.
-- **Hover hysteresis:** enter via the notch rect, leave via the (larger) current-state rect, so the hover edge doesn't flicker.
-- **Collapsed shape:** square top (ear radius 0) and a 10pt bottom radius, slightly rounder than the hardware cutout. Only pixels outside the cutout are visible, so erring inside it is invisible; erring outside would show black corners.
-- **Content/collapse sequencing** uses delayed animations (`.delay(0.09)` on content-in, `.delay(0.12)` on the collapse spring) instead of timers, so rapid toggling never races.
-- **Esc** is handled by a local keyDown monitor; the panel becomes key (without activating the app) only while expanded.
-- **Wings** (side indicators on the collapsed notch) skipped for now; optional in the spec.
+- **Generated `.xcodeproj` is git-ignored.** `project.yml` is the source of truth; run `xcodegen` after cloning. KeyboardShortcuts is pinned to an exact version there, since `Package.resolved` lives inside the ignored project.
+- **Unit tests run hosted in the app**; `AppDelegate` skips all setup when `XCTestConfigurationFilePath` is set, so tests never read the real clipboard or write real history. Codec tests use `NSPasteboard.withUniqueName()`.
+
+## Clipboard
+
 - **Pasteboard polling** uses a 0.4s `Timer` on the main run loop in `.common` mode. Reading `changeCount` is an integer check, so the main actor is fine and avoids cross-actor hops under Swift 6.
-- **Classification order:** files, images, URLs, rich text, **colors, then plain text**. Colors moved ahead of plain text because apps that copy a color usually add its text form too, which would otherwise always win. A plain-text copy that is exactly one http(s) URL is classified as a URL.
+- **Classification order:** files, images, URLs, rich text, **colors, then plain text**. Colors come before plain text because apps that copy a color usually add its text form too, which would otherwise always win. A plain-text copy that is exactly one http(s) URL is classified as a URL.
 - **Oversized content is skipped, not truncated** (text > 1MB, image PNG > 10MB). A truncated copy would paste back different content.
 - **Dedupe hash** covers the visible payload only (e.g. plain text for both rich and plain text), so the same text copied from two apps is one item. Dedupe moves the existing item to the top with a fresh timestamp, keeping its pin.
 - **Copy-back** moves the item to the top (`bump`) and records the resulting `changeCount` so the monitor ignores it.
+- **Pasteboard access (macOS 15.4+):** when `NSPasteboard.accessBehavior` is `.alwaysDeny`, the monitor stops reading and the list shows an inline card. The card opens the Privacy & Security pane; there is no documented deep link to the "Paste from Other Apps" list itself.
+- **Ignored apps defaults** (bundle IDs): `com.1password.1password`, `com.agilebits.onepassword7`, `com.bitwarden.desktop`, `com.apple.keychainaccess`, `com.apple.Passwords`.
+
+## Storage
+
 - **"Clear history" keeps pinned items.** Pins are explicit "keep this" signals.
 - **Corrupt `history.json`** is renamed to `history.corrupt-<ts>.json` instead of being overwritten on the next save.
 - **Dates** are stored as JSON's default `Double` (not ISO 8601), so they round-trip exactly.
-- **Pasteboard access (macOS 15.4+):** `NSPasteboard.accessBehavior` exists in the SDK. When it is `.alwaysDeny`, the monitor stops reading and sets `accessDenied`, which the panel shows as an inline card.
-- **Unit tests run hosted in the app**; `AppDelegate` skips all setup when `XCTestConfigurationFilePath` is set, so tests never read the real clipboard or write real history. Codec tests use `NSPasteboard.withUniqueName()`.
-- **Row stagger** uses one `revealed` flag on the list, flipped on appear; each row animates with `0.09s + index × 25ms` delay (capped at 10 rows). Rows created later by `LazyVStack` while scrolling see `revealed == true` and don't re-animate.
-- **Thumbnails** are downsampled with ImageIO (`CGImageSourceCreateThumbnailAtIndex`, max 240px) and cached with app/file icons in `NSCache` (`IconCache`), so a 5K screenshot is never fully decoded for a 44pt row.
+
+## List UI
+
+- **Actions live on `PanelModel`** (copy, delete, pin, selection), shared by mouse and keyboard; the "Copied" check is driven by `copiedID` so keyboard copies show it too.
+- **Keyboard handling** lives in the panel's local `keyDown` monitor, which runs before the search field's field editor. ↑/↓/Return/⌘F/⌘1–9/Esc are always handled; ⌫ deletes the selected item only when the search field is *not* focused, so it can still edit the query.
+- **Selection** starts on the first visible item when the list opens and resets to the first match whenever the query changes, so Return always copies something sensible.
+- **Search resets when the list closes.**
+- **Row stagger** uses one `revealed` flag on the list, flipped on first appear; each row animates with `0.09s + index × 25ms` delay (capped at 10 rows). Rows created later by `LazyVStack` while scrolling don't re-animate.
+- **Thumbnails** are downsampled with ImageIO (max 240px) and cached with app/file icons in `NSCache` (`IconCache`), so a 5K screenshot is never fully decoded for a 44pt row.
 - **Relative timestamps** come from a single `TimelineView` (30s period) around the list rather than per-row timers.
 - **"Code-looking" text** (SF Mono) is a marker heuristic: `{ } ; => -> () </`, a tab, or 4-space indentation.
-- **Collapse after copy** defaults to on; it fires after the 0.9s "Copied" morph. Settings toggle lands in M6.
-- **Access-denied card** opens the Privacy & Security pane (`x-apple.systempreferences:com.apple.preference.security?Privacy`); there is no documented deep link to the "Paste from Other Apps" list itself.
-- **Keyboard handling** lives in the panel's local `keyDown` monitor, which runs before the search field's field editor. ↑/↓/Return/⌘F/⌘1–9/Esc are always handled; ⌫ deletes the selected item only when the search field is *not* focused, so it can still edit the query.
-- **Selection** starts on the first visible item when the panel expands and resets to the first match whenever the query changes, so Return always copies something sensible.
-- **Actions live on `NotchViewModel`** (copy, delete, pin, selection), shared by mouse and keyboard; the "Copied" morph is driven by `copiedID` so keyboard copies show it too.
-- **Hotkey-opened panel:** the 400ms leave-to-collapse only arms after the cursor has been inside the expanded panel; otherwise opening with ⌥⌘V and nudging the mouse would collapse it instantly. Outside clicks and Esc still collapse.
-- **Hotkey** uses KeyboardShortcuts 2.4.0 (`togglePanel`, default ⌥⌘V); the recorder UI is in Settings (M6).
-- **Search resets on collapse.**
-- **Settings** are a plain `NSWindow` + `NSHostingController` (`SettingsWindowController`), not a SwiftUI `Settings` scene, which is unreliable to open from an `LSUIElement` app. Opening it activates the app; the panel collapses first.
-- **`AppSettings`** (UserDefaults-backed `@Observable`) is read directly by the monitor (ignored apps), view model (collapse after copy) and window controller (display). History limit is pushed into `ClipboardStore.limit` from the picker.
-- **"Display with mouse"** moves the panel to the screen under the cursor on the next mouse move, but only while collapsed, so an open panel is never pulled away.
-- **Fallback pill height** = that screen's menu bar thickness (`frame.maxY − visibleFrame.maxY`, 30pt on the test Dell), falling back to 32pt when the menu bar auto-hides. The spec's fixed 32pt overlapped content below a 30pt menu bar.
+- **Reduce Motion** is checked per animation via `NSWorkspace.accessibilityDisplayShouldReduceMotion` (row springs become 0.15s ease, the panel fade is instant).
+
+## Settings
+
+- **Settings** are a plain `NSWindow` + `NSHostingController` (`SettingsWindowController`), not a SwiftUI `Settings` scene, which is unreliable to open from an `LSUIElement` app. Opening it activates the app; the list closes first.
+- **`AppSettings`** (UserDefaults-backed `@Observable`) is read directly by the monitor (ignored apps) and the panel model (close after copy). History limit is pushed into `ClipboardStore.limit` from the picker.
+- **Hotkey** uses KeyboardShortcuts 2.4.0 (`togglePanel`, default ⌥⌘V), with its recorder in Settings.
 - **Launch at login** uses `SMAppService.mainApp`. With an ad-hoc-signed build outside /Applications the system may refuse or require approval; the toggle shows the error or an approval hint and reverts if registration fails.
-- **Right-click on the notch** offers Settings… and Quit (also available when expanded).
-- **Reduce Motion** is checked per animation via `NSWorkspace.accessibilityDisplayShouldReduceMotion` (springs become 0.15s ease, row stagger offset is dropped), so toggling it applies without relaunch.
-- **Ignored apps defaults** (bundle IDs): `com.1password.1password`, `com.agilebits.onepassword7`, `com.bitwarden.desktop`, `com.apple.keychainaccess`, `com.apple.Passwords`.

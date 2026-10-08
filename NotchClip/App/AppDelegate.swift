@@ -2,7 +2,7 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var notchController: NotchWindowController?
+    private var menuBarController: MenuBarController?
     private var store: ClipboardStore?
     private var monitor: PasteboardMonitor?
     private var settingsWindow: SettingsWindowController?
@@ -16,12 +16,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let monitor = PasteboardMonitor(store: store, settings: settings)
         monitor.start()
         let settingsWindow = SettingsWindowController(settings: settings, store: store)
-        let controller = NotchWindowController(store: store, monitor: monitor, settings: settings)
+        let controller = MenuBarController(store: store, monitor: monitor, settings: settings)
         controller.model.onOpenSettings = { settingsWindow.show() }
         self.store = store
         self.monitor = monitor
         self.settingsWindow = settingsWindow
-        notchController = controller
+        menuBarController = controller
     }
 
     func applicationWillTerminate(_ notification: Notification) {

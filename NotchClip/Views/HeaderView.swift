@@ -2,7 +2,7 @@ import SwiftUI
 
 struct HeaderView: View {
     @Environment(ClipboardStore.self) private var store
-    @Environment(NotchViewModel.self) private var model
+    @Environment(PanelModel.self) private var model
     @State private var confirmingClear = false
     @State private var confirmTask: Task<Void, Never>?
     @FocusState private var searchFocused: Bool

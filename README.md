@@ -1,8 +1,10 @@
 # NotchClip
 
-A clipboard history that lives in the MacBook notch. Hover the notch and it grows slightly; click it (or press ⌥⌘V) and a black panel springs out of the notch with your recent clips. Click a row to put it back on the clipboard.
+A clipboard history in your menu bar. Click the clipboard icon (or press ⌥⌘V) to see your recent clips; click one to put it back on the clipboard. Works on every display.
 
-No Dock icon, no menu bar item: right-click the notch for Settings and Quit.
+No Dock icon. Right-click the menu bar icon for Settings and Quit.
+
+> The name is from the first version, which lived in the MacBook notch. See [DECISIONS.md](DECISIONS.md) for why it moved to the menu bar.
 
 ## Requirements
 
@@ -29,7 +31,7 @@ xcodebuild test -scheme NotchClip -destination 'platform=macOS' -derivedDataPath
 
 | Action | How |
 |---|---|
-| Open / close | Click the notch, or ⌥⌘V (changeable in Settings) |
+| Open / close | Click the menu bar icon, or ⌥⌘V (changeable in Settings) |
 | Copy an item back | Click its row, or select it and press Return |
 | Quick copy | ⌘1 … ⌘9 |
 | Move selection | ↑ / ↓ |
@@ -37,10 +39,10 @@ xcodebuild test -scheme NotchClip -destination 'platform=macOS' -derivedDataPath
 | Pin / unpin | Hover a row and click the pin; pinned items stay at the top and are never evicted |
 | Search | ⌘F or the magnifier; matches text, URLs, file names and source app |
 | More options | Right-click a row (Copy as Plain Text, Pin, Delete) |
-| Close | Esc, click outside, or move the mouse away from the panel |
-| Settings / Quit | Gear in the panel, or right-click the notch |
+| Close | Esc, click outside, or click the icon again |
+| Settings / Quit | Gear in the list, or right-click the menu bar icon |
 
-On a Mac without a notch (or an external display), NotchClip shows a small black pill at the top center of the screen instead.
+On MacBooks with a notch, a crowded menu bar can hide icons behind the notch. If the clipboard icon is hidden, ⌥⌘V still opens the list at the top right of the screen; tools like Ice or Bartender can manage which icons show.
 
 ## Privacy
 
@@ -61,8 +63,8 @@ NotchClip v1 is **not sandboxed** and is ad-hoc signed. That keeps clipboard mon
 ```
 NotchClip/
   App/        App entry point and AppDelegate (wires everything together)
-  Window/     NSPanel, positioning, mouse tracking/click-through, notch detection
-  Views/      Notch shape and state machine, header, list, rows, settings
+  Window/     Menu bar icon, dropdown panel, positioning, keyboard and outside-click handling
+  Views/      Panel model and view, header, list, rows, settings
   Model/      ClipItem, ClipboardStore (persistence, dedupe, limits), AppSettings
   Services/   PasteboardMonitor + PasteboardCodec (read/classify/write), LaunchAtLogin
 NotchClipTests/  Store and classification tests (Swift Testing)
