@@ -14,12 +14,10 @@ No Dock icon. Right-click the menu bar icon for Settings and Quit.
 ## Build and run
 
 ```sh
-xcodegen
-xcodebuild -scheme NotchClip -configuration Debug -derivedDataPath build build
-open build/Build/Products/Debug/NotchClip.app
+./run.sh
 ```
 
-The `.xcodeproj` is generated from `project.yml` and isn't checked in. Run `xcodegen` again after adding or removing files.
+This generates the Xcode project, builds it, quits any running copy and opens the new build. The `.xcodeproj` is generated from `project.yml` and isn't checked in.
 
 Run the tests:
 
