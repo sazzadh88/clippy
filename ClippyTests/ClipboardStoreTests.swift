@@ -116,3 +116,15 @@ struct PopupPlacementTests {
         #expect(r == CGRect(x: 10, y: 780, width: 2, height: 20))
     }
 }
+
+struct CaretPlausibilityTests {
+    @Test func rejectsPlaceholdersAndWholeTextViews() {
+        #expect(!Paster.isPlausibleCaret(CGRect(x: 0, y: 1440, width: 0, height: 0))) // "unknown" placeholder
+        #expect(!Paster.isPlausibleCaret(CGRect(x: 0, y: -1202, width: 911, height: 2642))) // Terminal's scrollback view
+    }
+
+    @Test func acceptsCaretsGlyphsAndFields() {
+        #expect(Paster.isPlausibleCaret(CGRect(x: 28, y: 1326, width: 0, height: 26))) // caret after a Terminal glyph
+        #expect(Paster.isPlausibleCaret(CGRect(x: 1245, y: 76, width: 636, height: 28))) // browser text field
+    }
+}
