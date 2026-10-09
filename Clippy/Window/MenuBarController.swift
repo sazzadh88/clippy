@@ -11,13 +11,15 @@ final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
-/// Owns the menu bar icon and the dropdown panel under it.
+/// Owns the menu bar icon, the dropdown under it, and the ⌥⌘V popup at the text caret.
 @MainActor
 final class MenuBarController: NSObject {
     let model: PanelModel
     private let panel = MenuBarPanel()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private var monitors: [Any] = []
+    /// Where the hotkey popup should appear (caret or mouse); nil means under the menu bar icon.
+    private var popupAnchor: CGRect?
 
     init(store: ClipboardStore, monitor: PasteboardMonitor, settings: AppSettings) {
         model = PanelModel(store: store, monitor: monitor, settings: settings)
@@ -40,8 +42,40 @@ final class MenuBarController: NSObject {
         }
 
         model.onOpenChange = { [weak self] in self?.openChanged($0) }
+        model.onPaste = { [weak self] in self?.paste() }
         installMonitors()
-        KeyboardShortcuts.onKeyUp(for: .togglePanel) { [weak self] in self?.model.toggle() }
+        KeyboardShortcuts.onKeyUp(for: .togglePanel) { [weak self] in self?.togglePopupAtCaret() }
+    }
+
+    // MARK: - Hotkey popup
+
+    /// ⌥⌘V: open next to the text caret (or the mouse, if the app doesn't expose its caret),
+    /// in paste mode: choosing an item pastes it into that app.
+    private func togglePopupAtCaret() {
+        guard !model.isOpen else { return model.close() }
+        let mouse = NSEvent.mouseLocation
+        popupAnchor = Paster.caretRect() ?? CGRect(origin: mouse, size: .zero)
+        model.open(pastesOnSelect: true)
+    }
+
+    private func paste() {
+        // Hide at once so keyboard focus is back in the target app before ⌘V arrives.
+        panel.orderOut(nil)
+        guard Paster.isTrusted else { return Paster.requestTrust() } // item is still copied
+        Task {
+            try? await Task.sleep(for: .milliseconds(120))
+            Paster.pressCommandV()
+        }
+    }
+
+    /// Below the anchor, left-aligned with it; above it when there's no room below. Kept on screen.
+    nonisolated static func popupOrigin(anchor: CGRect, size: CGSize, visible: CGRect) -> CGPoint {
+        let gap: CGFloat = 6
+        var y = anchor.minY - gap - size.height
+        if y < visible.minY { y = anchor.maxY + gap }
+        y = min(max(y, visible.minY), visible.maxY - size.height)
+        let x = min(max(anchor.minX, visible.minX + 8), visible.maxX - size.width - 8)
+        return CGPoint(x: x, y: y)
     }
 
     // MARK: - Menu bar icon
@@ -71,9 +105,18 @@ final class MenuBarController: NSObject {
     // MARK: - Panel
 
     private func openChanged(_ isOpen: Bool) {
-        statusItem.button?.highlight(isOpen)
         if isOpen {
-            positionPanel()
+            if let anchor = popupAnchor {
+                let point = CGPoint(x: anchor.midX, y: anchor.midY)
+                let screen = NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main
+                if let visible = screen?.visibleFrame {
+                    panel.setFrameOrigin(Self.popupOrigin(anchor: anchor, size: PanelModel.size, visible: visible))
+                }
+                popupAnchor = nil
+            } else {
+                statusItem.button?.highlight(true)
+                positionPanel()
+            }
             panel.alphaValue = 0
             panel.orderFrontRegardless()
             panel.makeKey()
@@ -82,6 +125,7 @@ final class MenuBarController: NSObject {
                 panel.animator().alphaValue = 1
             }
         } else {
+            statusItem.button?.highlight(false)
             NSAnimationContext.runAnimationGroup({ context in
                 context.duration = Motion.reduceMotion ? 0 : 0.1
                 panel.animator().alphaValue = 0

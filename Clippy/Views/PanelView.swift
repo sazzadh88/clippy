@@ -10,6 +10,10 @@ final class PanelModel {
     static let size = CGSize(width: 420, height: 480)
 
     private(set) var isOpen = false
+    /// Opened with the hotkey: choosing an item pastes it into the app you were typing in.
+    private(set) var pastesOnSelect = false
+    /// Whether Clippy has Accessibility permission, needed to paste for you.
+    private(set) var canPaste = false
     var pinnedOnly = false
     var searchVisible = false
     var searchText = ""
@@ -21,6 +25,7 @@ final class PanelModel {
     private(set) var copiedID: ClipItem.ID?
     @ObservationIgnored var onOpenChange: ((Bool) -> Void)?
     @ObservationIgnored var onOpenSettings: (() -> Void)?
+    @ObservationIgnored var onPaste: (() -> Void)?
 
     let store: ClipboardStore
     let monitor: PasteboardMonitor
@@ -34,8 +39,10 @@ final class PanelModel {
 
     // MARK: - Open / close
 
-    func open() {
+    func open(pastesOnSelect: Bool = false) {
         guard !isOpen else { return }
+        self.pastesOnSelect = pastesOnSelect
+        canPaste = Paster.isTrusted
         selectedID = visibleItems.first?.id
         isOpen = true
         onOpenChange?(true)
@@ -71,6 +78,11 @@ final class PanelModel {
 
     func copy(_ item: ClipItem, plainTextOnly: Bool = false) {
         withAnimation(.rowSpring) { monitor.copy(item, plainTextOnly: plainTextOnly) }
+        if pastesOnSelect {
+            close()
+            onPaste?()
+            return
+        }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { copiedID = item.id }
         Task {
             try? await Task.sleep(for: .seconds(0.6)) // let the "Copied" check show
@@ -139,7 +151,7 @@ struct PanelView: View {
         .padding(.horizontal, 12)
         .padding(.top, 8)
         .frame(width: PanelModel.size.width, height: PanelModel.size.height)
-        .background(shape.fill(.black.opacity(0.94)))
+        .background(shape.fill(.black))
         .overlay(shape.strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
         .clipShape(shape)
         .preferredColorScheme(.dark)

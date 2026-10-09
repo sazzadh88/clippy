@@ -14,6 +14,14 @@ With the notch gone, the app is now **Clippy** (bundle ID `in.f9x.Clippy`, folde
 - **Placement:** on the display with the mouse. Under the icon if the icon is on that display; otherwise top-right of the display. That covers the hotkey and the case where the icon is hidden (on notch Macs, crowded menu bars push icons behind the notch).
 - **"Copied" check shows for 0.6s** (was 0.9s) before the list closes; a dropdown that lingers feels slow.
 
+## Paste at the text cursor (2026-10-09)
+
+- **⌥⌘V opens the list next to the text caret** and choosing an item (click, Return, ⌘1–9, context menu) copies it, closes the list and sends ⌘V to the app you were typing in. Opening from the menu bar icon stays copy-only, since you may just be browsing.
+- **Caret position** comes from the Accessibility API (`kAXSelectedTextRangeAttribute` → `kAXBoundsForRangeParameterizedAttribute`), converted from AX's top-left origin to Cocoa coordinates. Apps that don't expose it, or report a rect that isn't on any screen, fall back to the mouse pointer.
+- **Placement:** below the caret, left-aligned with it; above it when there's no room below; clamped to the screen (`MenuBarController.popupOrigin`, unit-tested).
+- **Pasting** posts ⌘V (key code 9) after hiding the panel and waiting 120ms, so keyboard focus is back in the target app. Both reading the caret and posting keys need Accessibility permission; without it the item is still copied and the list shows an "Allow…" card that triggers the system prompt.
+- **Panel background is fully opaque** so text behind a popup at the caret doesn't show through.
+
 ## General
 
 - **Not sandboxed (v1).** No entitlements file, so pasteboard reading and launch-at-login need no extra setup.

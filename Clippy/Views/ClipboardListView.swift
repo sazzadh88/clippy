@@ -12,7 +12,20 @@ struct ClipboardListView: View {
         let (pinned, recent) = model.sections
 
         VStack(spacing: 8) {
-            if monitor.accessDenied { AccessDeniedCard() }
+            if monitor.accessDenied {
+                NoticeCard(title: "Clipboard access is turned off",
+                           message: "Open System Settings › Privacy & Security › Paste from Other Apps and set Clippy to Allow.",
+                           buttonTitle: "Open Settings") {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+            }
+            if model.pastesOnSelect && !model.canPaste {
+                NoticeCard(title: "Allow Clippy to paste for you",
+                           message: "Turn on Clippy under System Settings › Privacy & Security › Accessibility. Until then, choosing an item copies it.",
+                           buttonTitle: "Allow…") { Paster.requestTrust() }
+            }
 
             if pinned.isEmpty && recent.isEmpty {
                 EmptyStateView(message: emptyMessage)
@@ -106,28 +119,29 @@ private struct EmptyStateView: View {
     }
 }
 
-private struct AccessDeniedCard: View {
+private struct NoticeCard: View {
+    let title: String
+    let message: String
+    let buttonTitle: String
+    let action: () -> Void
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "hand.raised.fill")
                 .font(.system(size: 14))
                 .foregroundStyle(.orange)
             VStack(alignment: .leading, spacing: 3) {
-                Text("Clipboard access is turned off")
+                Text(title)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.9))
-                Text("Open System Settings › Privacy & Security › Paste from Other Apps and set Clippy to Allow.")
+                Text(message)
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.55))
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
-            Button("Open Settings") {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy") {
-                    NSWorkspace.shared.open(url)
-                }
-            }
-            .buttonStyle(PillButtonStyle())
+            Button(buttonTitle, action: action)
+                .buttonStyle(PillButtonStyle())
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.orange.opacity(0.12)))

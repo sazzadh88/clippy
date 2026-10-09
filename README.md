@@ -51,8 +51,9 @@ After that it opens normally. (Terminal alternative: `xattr -dr com.apple.quaran
 
 | Action | How |
 |---|---|
-| Open / close | Click the menu bar icon, or ⌥⌘V (changeable in Settings) |
-| Copy an item back | Click its row, or select it and press Return |
+| Browse history | Click the menu bar icon; clicking a row copies it |
+| Paste from history | Press ⌥⌘V while typing anywhere: the list opens at your text cursor, and choosing an item pastes it there |
+| Copy / paste the selected item | Click its row, or select it and press Return |
 | Quick copy | ⌘1 … ⌘9 |
 | Move selection | ↑ / ↓ |
 | Delete | Hover a row and click ×, or select it and press ⌫ |
@@ -61,6 +62,10 @@ After that it opens normally. (Terminal alternative: `xattr -dr com.apple.quaran
 | More options | Right-click a row (Copy as Plain Text, Pin, Delete) |
 | Close | Esc, click outside, or click the icon again |
 | Settings / Quit | Gear in the list, or right-click the menu bar icon |
+
+**Pasting needs Accessibility permission.** The first time, the ⌥⌘V list shows an **Allow…** button; turn Clippy on under System Settings › Privacy & Security › Accessibility. Until then, choosing an item only copies it. If an app doesn't report where its text cursor is (some browsers and Electron apps), the list opens at the mouse pointer instead. The hotkey can be changed in Settings.
+
+> While developing: macOS ties this permission to the app's code signature, and each ad-hoc `./run.sh` build has a new one. After rebuilding, turn Clippy off and on again in the Accessibility list (or remove it with − and allow again).
 
 On MacBooks with a notch, a crowded menu bar can hide icons behind the notch. If the clipboard icon is hidden, ⌥⌘V still opens the list at the top right of the screen; tools like Ice or Bartender can manage which icons show.
 

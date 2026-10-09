@@ -90,3 +90,29 @@ struct ClipboardStoreTests {
         #expect(files.contains { $0.hasPrefix("history.corrupt-") })
     }
 }
+
+struct PopupPlacementTests {
+    let visible = CGRect(x: 0, y: 0, width: 1000, height: 800)
+    let size = CGSize(width: 420, height: 480)
+
+    @Test func belowCaretLeftAligned() {
+        let origin = MenuBarController.popupOrigin(anchor: CGRect(x: 100, y: 700, width: 2, height: 16), size: size, visible: visible)
+        #expect(origin == CGPoint(x: 100, y: 700 - 6 - 480))
+    }
+
+    @Test func flipsAboveWhenNoRoomBelow() {
+        let origin = MenuBarController.popupOrigin(anchor: CGRect(x: 100, y: 100, width: 2, height: 16), size: size, visible: visible)
+        #expect(origin == CGPoint(x: 100, y: 100 + 16 + 6))
+    }
+
+    @Test func staysOnScreenAtRightEdgeAndTop() {
+        let origin = MenuBarController.popupOrigin(anchor: CGRect(x: 990, y: 300, width: 2, height: 16), size: size, visible: visible)
+        // No room below → flips above (y 322), then clamped so the top stays on screen (800 - 480).
+        #expect(origin == CGPoint(x: 1000 - 420 - 8, y: 800 - 480))
+    }
+
+    @Test func axRectFlipsToCocoa() {
+        let r = Paster.cocoaRect(fromAX: CGRect(x: 10, y: 100, width: 2, height: 20), primaryScreenHeight: 900)
+        #expect(r == CGRect(x: 10, y: 780, width: 2, height: 20))
+    }
+}
