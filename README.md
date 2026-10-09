@@ -31,7 +31,13 @@ xcodebuild test -scheme Clippy -destination 'platform=macOS' -derivedDataPath bu
 ./package.sh
 ```
 
-This builds a universal Release (Apple Silicon and Intel, macOS 14+) and writes `dist/Clippy.zip`. Send that zip.
+This builds a universal Release (Apple Silicon and Intel, macOS 14+) and writes the file to share:
+
+```
+dist/Clippy.zip
+```
+
+Reveal it in Finder with `open -R dist/Clippy.zip`. The zip isn't checked in; run `./package.sh` again after any change so it contains the latest build.
 
 The app isn't notarized by Apple (that needs a paid Developer ID), so the first launch on someone else's Mac is blocked with "Apple could not verify Clippy…". To open it:
 
