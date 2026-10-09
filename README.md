@@ -25,6 +25,22 @@ Run the tests:
 xcodebuild test -scheme Clippy -destination 'platform=macOS' -derivedDataPath build
 ```
 
+## Sharing the app
+
+```sh
+./package.sh
+```
+
+This builds a universal Release (Apple Silicon and Intel, macOS 14+) and writes `dist/Clippy.zip`. Send that zip.
+
+The app isn't notarized by Apple (that needs a paid Developer ID), so the first launch on someone else's Mac is blocked with "Apple could not verify Clippy…". To open it:
+
+1. Unzip and move **Clippy.app** to Applications.
+2. Double-click it, then click **Done** on the warning.
+3. Open **System Settings › Privacy & Security**, scroll down and click **Open Anyway** next to the Clippy message, then confirm.
+
+After that it opens normally. (Terminal alternative: `xattr -dr com.apple.quarantine /Applications/Clippy.app`.)
+
 ## Using it
 
 | Action | How |
@@ -54,7 +70,7 @@ On MacBooks with a notch, a crowded menu bar can hide icons behind the notch. If
 Clippy v1 is **not sandboxed** and is ad-hoc signed. That keeps clipboard monitoring and launch-at-login simple, but it also means:
 
 - Launch at login (`SMAppService`) may be refused or need approval in System Settings › General › Login Items, especially when running from the build folder. Copy the app to `/Applications` first.
-- Gatekeeper may warn the first time you open a copy of the app on another Mac.
+- Gatekeeper blocks the first launch on other Macs; see [Sharing the app](#sharing-the-app).
 
 ## Project layout
 
